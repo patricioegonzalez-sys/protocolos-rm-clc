@@ -1,0 +1,448 @@
+import React, { useState, useMemo } from 'react';
+import { Search, ChevronLeft, Brain, Bone, Activity, Stethoscope, Info } from 'lucide-react';
+
+// --- BASE DE DATOS DE PROTOCOLOS (Extraída de los documentos proporcionados) ---
+const protocolsData = [
+  // ================= NEURO =================
+  {
+    id: 'n1',
+    category: 'Neuro',
+    title: 'Cerebro Estándar',
+    indications: 'Estudio de rutina de cerebro.',
+    notes: 'Contraste: Según indicación médica.',
+    sequences: [
+      'Sagital: 3D T1 VIBE',
+      'Transversal: T2, T2 FLAIR, DIFF, T2*',
+      'Coronal: T2'
+    ]
+  },
+  {
+    id: 'n2',
+    category: 'Neuro',
+    title: 'Cerebro Epilepsia Refractaria / Focal',
+    indications: 'Estudio avanzado de epilepsia.',
+    notes: 'DIR Consultar con radiólogo. Por síncope se puede realizar en Avanto.',
+    sequences: [
+      'Sagital: 3D T1 VIBE',
+      'Transversal: T2, DIFF, T2*, ASL',
+      'Coronal: T2 3mm (Hipo), IR 3mm (Hipo), FLAIR 3mm (Hipo)',
+      'Especiales: 3D MPRAGE, 3D T2 FLAIR sin FS, 3D DIR (consultar)'
+    ]
+  },
+  {
+    id: 'n3',
+    category: 'Neuro',
+    title: 'Cerebro EM - Enf. Desmielinizante - ADEM',
+    indications: 'Esclerosis Múltiple, Neuritis Óptica.',
+    notes: 'Contraste: Sí (TRA T1 MT post-gadolinio).',
+    sequences: [
+      'Sagital: 3D T1 VIBE',
+      'Transversal: T2, DIFF, T2*, T1 MT, SWI, T1 MT (Post-Gd)',
+      'Coronal: T2',
+      'Especiales: 3D MPRAGE, 3D T2 FLAIR sin FS, 3D DIR'
+    ]
+  },
+  {
+    id: 'n4',
+    category: 'Neuro',
+    title: 'Cerebro Fosa Posterior / Tu Ángulo Pontocerebeloso',
+    indications: 'Vértigo, neuralgia del trigémino, trastorno deglutorio, ataxia.',
+    notes: 'Contraste: TRA T1 FS post-gadolinio.',
+    sequences: [
+      'Sagital: 3D T1 VIBE',
+      'Transversal: T2, T2 FLAIR, DIFF, T2*, 3D CISS, T1 FS (Post-Gd)',
+      'Coronal: T2 / DP, T1, T2'
+    ]
+  },
+  {
+    id: 'n5',
+    category: 'Neuro',
+    title: 'Hipófisis (Macroadenoma)',
+    indications: 'Estudio de silla turca y glándula hipofisaria.',
+    notes: 'SIEMPRE REALIZAR SAG 3D T1 VIBE CEREBRO. Contraste dinámico.',
+    sequences: [
+      'Sagital: T1, T1 (Post-Gd)',
+      'Transversal: T2, T2 FLAIR, T1 MT',
+      'Coronal: T1, T2, DINÁMICO (Post-Gd), T1 (Post-Gd)'
+    ]
+  },
+  {
+    id: 'n6',
+    category: 'Neuro',
+    title: 'Columna Lumbar',
+    indications: 'Estudio de columna lumbar estándar.',
+    notes: 'Marcar con vitamina región del dolor si corresponde. SAG T1 FS pregado sólo en diagnóstico lisis.',
+    sequences: [
+      'Sagital: T1, T2, STIR',
+      'Transversal: T2',
+      'Especiales: 3D T2 SPACE (opcional según equipo)'
+    ]
+  },
+
+  // ================= MSK (OSTEOARTICULAR) =================
+  {
+    id: 'm1',
+    category: 'MSK',
+    title: 'Hombro Estándar',
+    indications: 'Dolor, manguito rotador, inestabilidad.',
+    notes: 'Posición: Eje coronal paralelo al TSE. Eje sagital perpendicular al TSE. Agregar T2 GRE en tendinopatía cálcica.',
+    sequences: [
+      'Axial: DP FS',
+      'Coronal: DP FS, T2',
+      'Sagital: DP FS, T1, T2 FS (no muy pesado)'
+    ]
+  },
+  {
+    id: 'm2',
+    category: 'MSK',
+    title: 'Artro-RM Hombro (con Gadolinio)',
+    indications: 'Sospecha lesión labrum, inestabilidad.',
+    notes: 'Volumen intraarticular: 12-15 cc (dilución de Gd).',
+    sequences: [
+      'Axial: T1 FS',
+      'Coronal: T1 FS, T2 FS',
+      'Sagital: T1 FS, T1, T2 FS',
+      'ABER: T1 FS Según Dg'
+    ]
+  },
+  {
+    id: 'm3',
+    category: 'MSK',
+    title: 'Rodilla Estándar',
+    indications: 'Trauma, meniscos, ligamentos, cartílago.',
+    notes: 'En 3T el DP queda muy pesado (Subir TE > 90 ms). En estudios de cartílago: T2 FS sagital y coronal.',
+    sequences: [
+      'Axial: DP FS',
+      'Coronal: DP FS, T1, T2',
+      'Sagital: DP FS'
+    ]
+  },
+  {
+    id: 'm4',
+    category: 'MSK',
+    title: 'Muñeca',
+    indications: 'Dolor inespecífico, trauma carpal.',
+    notes: 'Posición: Palma abajo (pronación), con peso de fijación. Eje coronal paralelo a línea entre estiloides radial y cubital.',
+    sequences: [
+      'Axial: DP FS, T2',
+      'Coronal: T1, DP FS, T2 GRE vol (de3d-dess)',
+      'Sagital: DP FS'
+    ]
+  },
+  {
+    id: 'm5',
+    category: 'MSK',
+    title: 'Cadera Estándar',
+    indications: 'Pinzamiento, artrosis, dolor.',
+    notes: 'Posición: Cadera en rotación interna 15°. Incluye pelvis coronal.',
+    sequences: [
+      'Pelvis Coronal: T1, STIR',
+      'Cadera Coronal: DP FS',
+      'Cadera Sagital: DP FS',
+      'Cadera Axial: DP FS',
+      'Cadera Axial-Oblicuo: DP FS'
+    ]
+  },
+  {
+    id: 'm6',
+    category: 'MSK',
+    title: 'Tobillo',
+    indications: 'Esguince, tendinopatías.',
+    notes: 'Tendones peroneos deben verse hasta la inserción en base del 5° MTT. Usar T2 menos pesados.',
+    sequences: [
+      'Axial: DP FS, T2',
+      'Coronal: DP FS, T2',
+      'Sagital: T1, DP FS'
+    ]
+  },
+
+  // ================= CUERPO =================
+  {
+    id: 'c1',
+    category: 'Cuerpo',
+    title: 'Colangioresonancia',
+    indications: 'Colestasia, Ictericia, Pancreatitis, Coledocolitiasis.',
+    notes: 'Ayuno: 6 horas. Apnea espiratoria o trigger respiratorio.',
+    sequences: [
+      'Coronal: T2 haste (5mm)',
+      'Axial: T2 haste (5mm) hígado/páncreas/vía biliar',
+      'Sagital: T2 haste orientado a colédoco distal (4mm sin gap)',
+      'DWI Axial: b50, b400, b800 + mapa ADC',
+      'Colangio T2 thick slab radiales: orientado a colédoco distal',
+      'Axial: T2 haste saturado (fs o spair)',
+      'Axial: T1 vibe dixon 3.5mm (fase, fuera fase, solo agua)',
+      'T2 colangio dinámico: 10 cortes 25mm'
+    ]
+  },
+  {
+    id: 'c2',
+    category: 'Cuerpo',
+    title: 'Abdomen - Hígado Dinámico',
+    indications: 'Daño Hepático Crónico, Lesiones focales, Cirrosis, Metástasis.',
+    notes: 'Contraste: 15 ml (adultos >60kg) + flush 20ml SF. Dosis pediátrica 0.2 ml/kg.',
+    sequences: [
+      'Coronal: T2 haste (5mm)',
+      'Axial: T2 haste, T2 STIR',
+      'DWI Axial: b50, b400, b800 + ADC',
+      'VIBE q DIXON axial (Solo Sola para grasa/fierro)',
+      'Estudio Dinámico (T1 Vibe Dixon): Máscara pre-contraste',
+      'Fases: Arterial (20s), Portal (70s), Venosa (3 min)',
+      'Tardía (5 min): T1 vibe dixon coronal (3mm) y axial'
+    ]
+  },
+  {
+    id: 'c3',
+    category: 'Cuerpo',
+    title: 'Pelvis - Próstata Multiparamétrica',
+    indications: 'Cáncer prostático, HPB, Etapificación, PIRADS.',
+    notes: 'Ayuno 4 horas. Secuencias centradas en el área de interés. FOV pequeño.',
+    sequences: [
+      'Sagital: T2 tse 3mm sin gap',
+      'Coronal: T2 tse 3mm sin gap',
+      'Axial: T2 tse 3mm sin gap',
+      'DWI Axial: 3mm (b50, 1000, 1400 + ADC. b2000 en 3T)',
+      'Pelvis completa: T2 STIR axial, T2 Haste axial, T1 in/out fase',
+      'Dinámico: 3D T1W gradient echo axial (PIRADS) <15s/temp',
+      'Post-Gd: T1 vibe dixon axial 2.5mm'
+    ]
+  },
+  {
+    id: 'c4',
+    category: 'Cuerpo',
+    title: 'Pelvis - Femenina',
+    indications: 'Endometriosis, Miomas, Neoplasia endometrio/ovario.',
+    notes: 'Centrar secuencias en órgano afectado (Ovario, útero, vagina).',
+    sequences: [
+      'Sagital: T2 tse 3.5mm sin gap',
+      'Coronal: T2 tse 3.5mm sin gap',
+      'Axial: T2 tse 3.5mm (gap 10%), T2 STIR 4mm',
+      'DWI Axial: 4mm (b50, 400, 1000 + ADC, calc b1400)',
+      'Pre-Gd: T1 vibe dixon axial 2.5mm',
+      'Post-Gd: T1 vibe dixon axial, coronal y sagital (2.5mm)',
+      '*Si Ca Cervix/Endometrio: Agregar DWI sagital y Dinámico 3D T1W'
+    ]
+  },
+  {
+    id: 'c5',
+    category: 'Cuerpo',
+    title: 'Abdomen - EnteroRM',
+    indications: 'Enfermedad de Crohn, Enf. inflamatoria intestinal.',
+    notes: 'Preparación: Manitol (1500ml total). Buscapina 10mg EV x2 (cuidado en >70a, glaucoma).',
+    sequences: [
+      'Coronal: T2 haste 4mm (sin gap), T2 truefisp fs 4mm, T2 haste spair 4mm',
+      'Axial: T2 haste 4mm (gap 20%), T2 haste spair, T2 truefisp fs',
+      'DWI Axial: b50, b400, b800 + ADC',
+      'Dinámico Coronal T1 vibe dixon 1.4mm (Fases: Art 20s, Port 70s, Ven 120s)',
+      'Tardío Axial: T1 vibe dixon 3mm'
+    ]
+  }
+];
+
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('Todos');
+  const [selectedProtocol, setSelectedProtocol] = useState(null);
+
+  // Filtrado de protocolos basado en búsqueda y categoría activa
+  const filteredProtocols = useMemo(() => {
+    return protocolsData.filter(protocol => {
+      const matchesSearch = 
+        protocol.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        protocol.indications.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = activeTab === 'Todos' || protocol.category === activeTab;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, activeTab]);
+
+  // Icono dinámico según categoría
+  const getCategoryIcon = (category) => {
+    switch(category) {
+      case 'Neuro': return <Brain size={18} />;
+      case 'MSK': return <Bone size={18} />;
+      case 'Cuerpo': return <Stethoscope size={18} />;
+      default: return <Activity size={18} />;
+    }
+  };
+
+  // Colores dinámicos para los badges de categoría
+  const getCategoryColor = (category) => {
+    switch(category) {
+      case 'Neuro': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'MSK': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Cuerpo': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // --- VISTA DE DETALLE ---
+  if (selectedProtocol) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+        {/* Header Detalle */}
+        <header className="bg-blue-900 text-white p-4 shadow-md sticky top-0 z-10 flex items-center">
+          <button 
+            onClick={() => setSelectedProtocol(null)}
+            className="mr-3 p-2 rounded-full hover:bg-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 active:bg-blue-700"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <h1 className="text-xl font-bold truncate flex-1">{selectedProtocol.title}</h1>
+        </header>
+
+        {/* Contenido Detalle */}
+        <main className="flex-1 p-4 overflow-y-auto pb-20">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            
+            <div className="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-start">
+              <div>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(selectedProtocol.category)} mb-3`}>
+                  {getCategoryIcon(selectedProtocol.category)}
+                  {selectedProtocol.category}
+                </span>
+                <h2 className="text-2xl font-bold text-gray-800">{selectedProtocol.title}</h2>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-6">
+              {/* Indicaciones */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Activity size={16} /> Diagnóstico / Indicaciones
+                </h3>
+                <p className="text-gray-700 leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                  {selectedProtocol.indications}
+                </p>
+              </div>
+
+              {/* Notas */}
+              {selectedProtocol.notes && (
+                <div>
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Info size={16} /> Consideraciones / Preparación
+                  </h3>
+                  <p className="text-gray-700 text-sm bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                    {selectedProtocol.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Secuencias */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Secuencias del Protocolo
+                </h3>
+                <ul className="space-y-2">
+                  {selectedProtocol.sequences.map((seq, idx) => {
+                    // Resaltar el plano (Axial, Coronal, etc) si existe en el texto
+                    const parts = seq.split(':');
+                    return (
+                      <li key={idx} className="bg-gray-50 border border-gray-100 p-3 rounded-lg flex items-start gap-3">
+                        <div className="mt-1 w-2 h-2 rounded-full bg-blue-500 shrink-0"></div>
+                        <div className="text-gray-800">
+                          {parts.length > 1 ? (
+                            <>
+                              <span className="font-bold text-blue-900">{parts[0]}:</span> 
+                              {parts.slice(1).join(':')}
+                            </>
+                          ) : (
+                            seq
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // --- VISTA PRINCIPAL (LISTA) ---
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      {/* Header & Buscador */}
+      <header className="bg-blue-900 text-white pt-5 pb-4 px-4 shadow-md sticky top-0 z-10">
+        <h1 className="text-2xl font-bold mb-4 text-center">Protocolos RM</h1>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-xl leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 sm:text-sm shadow-inner transition-shadow"
+            placeholder="Buscar protocolo o diagnóstico..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </header>
+
+      {/* Pestañas de Categoría */}
+      <div className="bg-white border-b border-gray-200 overflow-x-auto hide-scrollbar sticky top-[108px] z-10 shadow-sm">
+        <div className="flex p-2 gap-2 min-w-max">
+          {['Todos', 'Neuro', 'MSK', 'Cuerpo'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${
+                activeTab === tab 
+                  ? 'bg-blue-900 text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {tab !== 'Todos' && getCategoryIcon(tab)}
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lista de Protocolos */}
+      <main className="flex-1 p-4 overflow-y-auto pb-6">
+        <div className="space-y-3">
+          {filteredProtocols.length > 0 ? (
+            filteredProtocols.map(protocol => (
+              <div 
+                key={protocol.id} 
+                onClick={() => setSelectedProtocol(protocol)}
+                className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] active:bg-gray-50 transition-all cursor-pointer flex flex-col gap-2"
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-bold text-gray-800 text-lg leading-tight pr-2">{protocol.title}</h3>
+                  <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${getCategoryColor(protocol.category)}`}>
+                    {protocol.category}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 line-clamp-2 leading-snug">
+                  {protocol.indications}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <Search className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-lg font-medium text-gray-600">No se encontraron protocolos</p>
+              <p className="text-sm mt-1">Intenta con otros términos de búsqueda.</p>
+            </div>
+          )}
+        </div>
+      </main>
+      
+      {/* Estilos globales para ocultar scrollbar en pestañas */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}} />
+    </div>
+  );
+}
