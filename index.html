@@ -1,5 +1,26 @@
-import React, { useState, useMemo } from 'react';
-import { Search, ChevronLeft, Brain, Bone, Activity, Stethoscope, Info } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolos RM CLC</title>
+    <!-- Aquí vinculamos el manifiesto que te pide PWABuilder -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Cargamos React y Lucide Icons desde servidores externos para que funcione en el navegador -->
+   <script src="https://unpkg.com"></
+    <script src="https://unpkg.com"></
+    <script src="https://unpkg.com"></
+    <script src="https://unpkg.com"></
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Indicamos al navegador que interprete el código de React -->
+    <script type="text/babel">
+      const { useState, useMemo } = React;
+const { Search, ChevronLeft, Brain, Bone, Activity, Stethoscope, Info } = Lucide;
+    
 
 // --- BASE DE DATOS DE PROTOCOLOS (Extraída de los documentos proporcionados) ---
 const protocolsData = [
@@ -446,3 +467,10 @@ export default function App() {
     </div>
   );
 }
+
+// Conectamos React con el HTML
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<ProtocolosApp />);
+</script>
+</body>
+</html>
