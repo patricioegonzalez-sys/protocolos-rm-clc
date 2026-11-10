@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "protocolos RM CLC",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "RMclc",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "description": "protocolos rm clinica las condes"
+}
